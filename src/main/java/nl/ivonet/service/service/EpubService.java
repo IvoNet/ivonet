@@ -58,7 +58,7 @@ public class EpubService {
 
     @Inject
     @Property("epub.folder")
-    private String rootFolder;
+    private String epubFolder;
 
     private Data retrieveData(final String folder) {
         final Data data = new Data(this.directory.folder(folder));
@@ -72,13 +72,13 @@ public class EpubService {
                                       .build()
                                       .toString());
 //        data.setFileUri(this.uriInfo.getBaseUriBuilder()
-//                                    .path(DownloadService.class)
+//                                    .path(DOWNLOAD)
 //                                    .build()
 //                                    .toString());
-//        data.setDownloadUri(this.uriInfo.getBaseUriBuilder()
-//                                        .path(ComicService.class)
-//                                        .build()
-//                                        .toString());
+        data.setDownloadUri(this.uriInfo.getBaseUriBuilder()
+                                        .path(DOWNLOAD)
+                                        .build()
+                                        .toString());
         return data;
     }
 
@@ -99,9 +99,6 @@ public class EpubService {
     }
 
 
-    //{"name":"test Folder met spaties/Name met spatie"}
-    //curl -H "Content-Type: application/json" -X POST -L -d '{"name":"Stoker, Bram"}' http://192.168.99
-    // .100:8081/books/api/folders
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
@@ -115,18 +112,15 @@ public class EpubService {
     @Consumes(APPLICATION_JSON)
     @Path(DOWNLOAD)
     public Response download(final ResourceName resource) {
-        final File file = Paths.get(this.rootFolder, resource.getName())
+        final File file = Paths.get(this.epubFolder, resource.getName())
                                .toFile();
         if (file.exists()) {
-            System.out.println("File found");
             return Response.ok()
                            .type(APPLICATION_X_CBR)
                            .entity(file)
                            .build();
-        } else {
-            System.out.println("File not found");
-            return Response.status(Response.Status.NOT_FOUND)
-                           .build();
         }
+        return Response.status(Response.Status.NOT_FOUND)
+                       .build();
     }
 }

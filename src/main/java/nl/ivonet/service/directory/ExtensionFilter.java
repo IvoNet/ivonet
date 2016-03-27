@@ -26,13 +26,13 @@ import java.util.stream.Stream;
 /**
  * @author Ivo Woltring
  */
-public class ExtensionFilter implements DirectoryStream.Filter<Path> {
+class ExtensionFilter implements DirectoryStream.Filter<Path> {
 
     private static final String DELIMETER = ":";
 
     private final String filterExtensions;
 
-    public ExtensionFilter(final String filterExtensions) {
+    ExtensionFilter(final String filterExtensions) {
         this.filterExtensions = filterExtensions;
     }
 

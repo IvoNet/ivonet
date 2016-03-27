@@ -22,6 +22,8 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
 /**
+ * Produces {@link Directory}'s.
+ *
  * @author Ivo Woltring
  */
 public class DirectoryProducer {
