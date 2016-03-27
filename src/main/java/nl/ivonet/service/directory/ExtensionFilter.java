@@ -16,9 +16,6 @@
 
 package nl.ivonet.service.directory;
 
-import nl.ivonet.service.config.Property;
-
-import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -33,9 +30,12 @@ public class ExtensionFilter implements DirectoryStream.Filter<Path> {
 
     private static final String DELIMETER = ":";
 
-    @Property
-    @Inject
-    private String filterExtensions;
+    private final String filterExtensions;
+
+    public ExtensionFilter(final String filterExtensions) {
+        this.filterExtensions = filterExtensions;
+    }
+
 
     @Override
     public boolean accept(final Path entry) throws IOException {

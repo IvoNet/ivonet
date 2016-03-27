@@ -32,6 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class DirectoryTest {
 
     @Inject
+    @EpubDirectory
     private Directory directory;
 
 

@@ -16,10 +16,6 @@
 
 package nl.ivonet.service.directory;
 
-import nl.ivonet.service.config.Property;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -32,12 +28,16 @@ import java.nio.file.Paths;
  */
 public class Directory {
 
-    @Inject
-    @Property
-    private String rootFolder;
+    private final String rootFolder;
+    private final DirectoryFilter directoryFilter;
+    private final ExtensionFilter extensionFilter;
 
-    @Inject private DirectoryFilter directoryFilter;
-    @Inject private ExtensionFilter extensionFilter;
+    public Directory(final String rootFolder, final String extensions) {
+        this.directoryFilter = new DirectoryFilter();
+        this.rootFolder = rootFolder.endsWith(File.separator) ? rootFolder : (rootFolder + "/");
+        this.extensionFilter = new ExtensionFilter(extensions);
+
+    }
 
     public Folder folder() {
         return folder("");
@@ -67,13 +67,4 @@ public class Directory {
         }
         return folder;
     }
-
-
-    @PostConstruct
-    public void postConstruct() {
-        if (!this.rootFolder.endsWith(File.separator)) {
-            this.rootFolder += "/";
-        }
-    }
-
 }

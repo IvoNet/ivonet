@@ -18,6 +18,7 @@ package nl.ivonet.service.service;
 
 import nl.ivonet.service.config.Property;
 import nl.ivonet.service.directory.Directory;
+import nl.ivonet.service.directory.EpubDirectory;
 import nl.ivonet.service.model.Data;
 import nl.ivonet.service.model.ResourceName;
 
@@ -52,10 +53,11 @@ public class EpubService {
     UriInfo uriInfo;
 
     @Inject
+    @EpubDirectory
     private Directory directory;
 
     @Inject
-    @Property
+    @Property("epub.folder")
     private String rootFolder;
 
     private Data retrieveData(final String folder) {

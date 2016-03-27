@@ -32,12 +32,11 @@ public class ExtensionFilterTest {
 
     @Before
     public void setUp() throws Exception {
-        this.filter = new ExtensionFilter();
+        this.filter = new ExtensionFilter(".epub:.kepub");
     }
 
     @Test
     public void testEpub() throws Exception {
-        injectField(this.filter, "filterExtensions", ".epub:.kepub");
         assertTrue(this.filter.accept(Paths.get("src/test/resources/books/Twain, Mark/pg74.epub")
                                            .toAbsolutePath()));
     }

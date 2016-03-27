@@ -18,4 +18,3 @@ Integration testing is done with Arquillian
 mvn clean verify -P with-integration
 ```
 
-
