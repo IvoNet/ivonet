@@ -1,7 +1,6 @@
-# books services
+# IvoNet services
 
-This project
-
+JAX-RS based services for IvoNet.nl
 
 # Testing
 
@@ -19,5 +18,4 @@ Integration testing is done with Arquillian
 mvn clean verify -P with-integration
 ```
 
-## Curl
 
