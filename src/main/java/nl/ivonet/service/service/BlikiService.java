@@ -17,8 +17,9 @@
 package nl.ivonet.service.service;
 
 import nl.ivonet.service.config.Property;
+import nl.ivonet.service.directory.BlikiDirectory;
 import nl.ivonet.service.directory.Directory;
-import nl.ivonet.service.directory.EpubDirectory;
+import nl.ivonet.service.model.Content;
 import nl.ivonet.service.model.Data;
 import nl.ivonet.service.model.Resource;
 
@@ -33,7 +34,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -42,23 +44,21 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * @author Ivo Woltring
  */
 @Stateless
-@Path(EpubService.EPUB)
-public class EpubService {
-    static final String EPUB = "/epub";
-    static final String DOWNLOAD = "/download";
-    private static final String APPLICATION_X_CBR = "application/x-cbr";
-
+@Path(BlikiService.BLIKI)
+public class BlikiService {
+    static final String BLIKI = "/bliki";
+    static final String DOWNLOAD = "/md";
 
     @Context
     UriInfo uriInfo;
 
     @Inject
-    @EpubDirectory
-    Directory directory;
+    @BlikiDirectory
+    private Directory directory;
 
     @Inject
-    @Property("epub.folder")
-    String epubFolder;
+    @Property("bliki.folder")
+    private String blikiFolder;
 
     private Data retrieveData(final String folder) {
         final Data data = new Data(this.directory.folder(folder));
@@ -71,11 +71,13 @@ public class EpubService {
                                       .path("/")
                                       .build()
                                       .toString());
-//        data.setFileUri(this.uriInfo.getBaseUriBuilder()
-//                                    .path(DOWNLOAD)
-//                                    .build()
-//                                    .toString());
+        data.setFileUri(this.uriInfo.getBaseUriBuilder()
+                                    .path(this.getClass())
+                                    .path(DOWNLOAD)
+                                    .build()
+                                    .toString());
         data.setDownloadUri(this.uriInfo.getBaseUriBuilder()
+                                        .path(this.getClass())
                                         .path(DOWNLOAD)
                                         .build()
                                         .toString());
@@ -108,19 +110,36 @@ public class EpubService {
     }
 
     @POST
-    @Produces(APPLICATION_X_CBR)
+    @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @Path(DOWNLOAD)
     public Response download(final Resource resource) {
-        final File file = Paths.get(this.epubFolder, resource.resource())
-                               .toFile();
-        if (file.exists()) {
+        try {
+            final Content data = new Content(Files.readAllBytes(Paths.get(this.blikiFolder, resource.resource())));
             return Response.ok()
-                           .type(APPLICATION_X_CBR)
-                           .entity(file)
+                           .type(APPLICATION_JSON)
+                           .entity(data)
+                           .build();
+        } catch (IOException e) {
+            return Response.status(Response.Status.NOT_FOUND)
                            .build();
         }
-        return Response.status(Response.Status.NOT_FOUND)
-                       .build();
+    }
+
+    @GET
+    @Produces(APPLICATION_JSON)
+    @Path("/md/{mmd: .+md}")
+    public Response downloadget(@PathParam("mmd") final String mmd) {
+        System.out.println("mmd = " + mmd);
+        try {
+            final Content data = new Content(Files.readAllBytes(Paths.get(this.blikiFolder, mmd)));
+            return Response.ok()
+                           .type(APPLICATION_JSON)
+                           .entity(data)
+                           .build();
+        } catch (IOException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                           .build();
+        }
     }
 }

@@ -36,10 +36,24 @@ public class DirectoryProducer {
     @Property("epub.extensions")
     private String epubExtentions;
 
+    @Inject
+    @Property("bliki.folder")
+    private String blikiRootFolder;
+
+    @Inject
+    @Property("bliki.extensions")
+    private String blikiExtentions;
+
     @Produces
     @EpubDirectory
     public Directory epubDirectoryProducer() {
         return new Directory(this.epubRootFolder, this.epubExtentions);
+    }
+
+    @Produces
+    @BlikiDirectory
+    public Directory blikiDirectoryProducer() {
+        return new Directory(this.blikiRootFolder, this.blikiExtentions);
     }
 
 

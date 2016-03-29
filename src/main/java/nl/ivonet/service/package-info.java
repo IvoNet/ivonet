@@ -14,26 +14,9 @@
  * limitations under the License.
  */
 
-package nl.ivonet.service.model;
-
-
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-
 /**
+ * Base package.
+ *
  * @author Ivo Woltring
  */
-@XmlRootElement
-public class ResourceName {
-
-    @XmlElement
-    private String name;
-
-    public String getName() {
-        return this.name;
-    }
-
-    public void setName(final String name) {
-        this.name = name;
-    }
-}
+package nl.ivonet.service;

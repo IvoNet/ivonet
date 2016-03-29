@@ -19,7 +19,7 @@ package nl.ivonet.service.service;
 import nl.ivonet.service.config.BootStrap;
 import nl.ivonet.service.directory.Directory;
 import nl.ivonet.service.model.Metadata;
-import nl.ivonet.service.model.ResourceName;
+import nl.ivonet.service.model.Resource;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
@@ -88,7 +88,7 @@ public class EpubServiceIT {
 
     @Test
     public void testPostDownload() throws Exception {
-        final ResourceName resourceName = new ResourceName();
+        final Resource resourceName = new Resource();
         resourceName.setName("Stoker, Bram/pg345.epub");
         final Response response = ClientBuilder.newClient()
                                                .target(UriBuilder.fromPath(
@@ -111,31 +111,30 @@ public class EpubServiceIT {
 
     @Test
     public void testPostDownloadWrongFile() throws Exception {
-        final ResourceName resourceName = new ResourceName();
-        resourceName.setName("Stoker, Bram/I do not exist.epub");
+        final Resource resource = new Resource();
+        resource.setPath("Stoker, Bram/");
+        resource.setName("I do not exist.epub");
         final Response response = ClientBuilder.newClient()
                                                .target(UriBuilder.fromPath(
                                                        this.base + "api" + EpubService.EPUB + EpubService.DOWNLOAD)
                                                                  .build())
                                                .request()
-                                               .post(Entity.entity(resourceName, MediaType.APPLICATION_JSON),
+                                               .post(Entity.entity(resource, MediaType.APPLICATION_JSON),
                                                      Response.class);
 
         assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
     }
 
 
-    //curl -H "Content-Type: application/json" -X POST -L -d '{"name":"Stoker, Bram"}' http://192.168.99
-    // .100:8081/books/api/folders
     @Test
     public void testPost() throws Exception {
-        final ResourceName resourceName = new ResourceName();
-        resourceName.setName("Stoker, Bram");
+        final Resource resource = new Resource();
+        resource.setPath("Stoker, Bram");
         final String response = ClientBuilder.newClient()
                                              .target(UriBuilder.fromPath(this.base + "api" + EpubService.EPUB)
                                                                .build())
                                              .request()
-                                             .post(Entity.entity(resourceName, MediaType.APPLICATION_JSON),
+                                             .post(Entity.entity(resource, MediaType.APPLICATION_JSON),
                                                    String.class);
 //        System.out.println("response = " + response);
         assertThat(response, notNullValue());
