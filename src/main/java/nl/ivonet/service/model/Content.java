@@ -36,7 +36,7 @@ public class Content extends Metadata {
     }
 
     public String getContent() {
-        return content;
+        return this.content;
     }
 
     public void setContent(final String content) {
