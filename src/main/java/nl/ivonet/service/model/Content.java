@@ -23,7 +23,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @author Ivo Woltring
  */
 @XmlRootElement
-public class Content {
+public class Content extends Metadata {
 
     @XmlElement
     private String content;

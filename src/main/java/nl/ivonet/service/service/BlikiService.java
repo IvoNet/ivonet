@@ -21,8 +21,10 @@ import nl.ivonet.service.directory.BlikiDirectory;
 import nl.ivonet.service.directory.Directory;
 import nl.ivonet.service.model.Content;
 import nl.ivonet.service.model.Data;
+import nl.ivonet.service.model.Metadata;
 import nl.ivonet.service.model.Resource;
 
+import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -44,10 +46,15 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * @author Ivo Woltring
  */
 @Stateless
-@Path(BlikiService.BLIKI)
+@Path(BlikiService.PATH)
 public class BlikiService {
-    static final String BLIKI = "/bliki";
+    static final String PATH = "/bliki";
     static final String DOWNLOAD = "/md";
+
+    private String baseUri;
+    private String browseUri;
+    private String fileUri;
+    private String downloadUri;
 
     @Context
     UriInfo uriInfo;
@@ -56,40 +63,16 @@ public class BlikiService {
     @BlikiDirectory
     private Directory directory;
 
+
     @Inject
     @Property("bliki.folder")
     private String blikiFolder;
-
-    private Data retrieveData(final String folder) {
-        final Data data = new Data(this.directory.folder(folder));
-        data.setBaseUri(this.uriInfo.getBaseUriBuilder()
-                                    .path(this.getClass())
-                                    .build()
-                                    .toString());
-        data.setBrowseUri(this.uriInfo.getBaseUriBuilder()
-                                      .path(this.getClass())
-                                      .path("/")
-                                      .build()
-                                      .toString());
-        data.setFileUri(this.uriInfo.getBaseUriBuilder()
-                                    .path(this.getClass())
-                                    .path(DOWNLOAD)
-                                    .build()
-                                    .toString());
-        data.setDownloadUri(this.uriInfo.getBaseUriBuilder()
-                                        .path(this.getClass())
-                                        .path(DOWNLOAD)
-                                        .build()
-                                        .toString());
-        return data;
-    }
 
     @GET
     @Produces(APPLICATION_JSON)
     public Data root() {
         return retrieveData("");
     }
-
 
     // FIXME: 26-03-2016 remove me when post completely works
     @GET
@@ -109,18 +92,20 @@ public class BlikiService {
                        .build();
     }
 
+
     @POST
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @Path(DOWNLOAD)
     public Response download(final Resource resource) {
         try {
-            final Content data = new Content(Files.readAllBytes(Paths.get(this.blikiFolder, resource.resource())));
+            final Content content = new Content(Files.readAllBytes(Paths.get(this.blikiFolder, resource.resource())));
+            addMetadata(content);
             return Response.ok()
                            .type(APPLICATION_JSON)
-                           .entity(data)
+                           .entity(content)
                            .build();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             return Response.status(Response.Status.NOT_FOUND)
                            .build();
         }
@@ -132,14 +117,48 @@ public class BlikiService {
     public Response downloadget(@PathParam("mmd") final String mmd) {
         System.out.println("mmd = " + mmd);
         try {
-            final Content data = new Content(Files.readAllBytes(Paths.get(this.blikiFolder, mmd)));
+            final Content content = new Content(Files.readAllBytes(Paths.get(this.blikiFolder, mmd)));
+            addMetadata(content);
             return Response.ok()
                            .type(APPLICATION_JSON)
-                           .entity(data)
+                           .entity(content)
                            .build();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             return Response.status(Response.Status.NOT_FOUND)
                            .build();
         }
     }
+
+    private Data retrieveData(final String folder) {
+        final Data data = new Data(this.directory.folder(folder));
+        addMetadata(data);
+        return data;
+    }
+
+    private void addMetadata(final Metadata metadata) {
+        metadata.setMetadata(this.baseUri, this.browseUri, this.fileUri, this.downloadUri);
+    }
+
+
+    @PostConstruct
+    public void init() {
+        this.baseUri = this.uriInfo.getBaseUriBuilder()
+                                   .path(this.getClass())
+                                   .build()
+                                   .toString();
+        this.browseUri = this.uriInfo.getBaseUriBuilder()
+                                     .path(this.getClass())
+                                     .path("/")
+                                     .build()
+                                     .toString();
+        this.fileUri = this.uriInfo.getBaseUriBuilder()
+                                   .path(DOWNLOAD)
+                                   .build()
+                                   .toString();
+        this.downloadUri = this.uriInfo.getBaseUriBuilder()
+                                       .path(DOWNLOAD)
+                                       .build()
+                                       .toString();
+    }
+
 }

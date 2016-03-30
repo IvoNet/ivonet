@@ -43,7 +43,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.File;
 import java.io.StringReader;
 import java.net.URL;
-import java.util.zip.ZipFile;
+import java.nio.file.Files;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -58,10 +58,120 @@ import static org.junit.Assert.assertTrue;
  * @author Ivo Woltring
  */
 @RunWith(Arquillian.class)
-public class EpubServiceIT {
+public class BlikiServiceIT {
 
     @ArquillianResource
     private URL base;
+
+    @Test
+    public void testPostDownloadWrongFile() throws Exception {
+        final Resource resource = new Resource();
+        resource.setPath("Java");
+        resource.setName("I do not exist.md");
+        final Response response = ClientBuilder.newClient()
+                                               .target(UriBuilder.fromPath(
+                                                       this.base + "api" + BlikiService.PATH + BlikiService.DOWNLOAD)
+                                                                 .build())
+                                               .request()
+                                               .post(Entity.entity(resource, MediaType.APPLICATION_JSON),
+                                                     Response.class);
+
+        assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    }
+
+    @Test
+    public void testDownload() throws Exception {
+        final Resource resource = new Resource();
+        resource.setPath("Java");
+        resource.setName("home.md");
+        final Response response = ClientBuilder.newClient()
+                                               .target(UriBuilder.fromPath(
+                                                       this.base + "api" + BlikiService.PATH + BlikiService.DOWNLOAD)
+                                                                 .build())
+                                               .request()
+                                               .post(Entity.entity(resource, MediaType.APPLICATION_JSON),
+                                                     Response.class);
+        assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+        assertTrue(response.hasEntity());
+        final File file = response.readEntity(File.class);
+        assertNotNull(file);
+        final String responseStr = new String(Files.readAllBytes(file.toPath()));
+        System.out.println("responseStr = " + responseStr);
+        final JsonObject rootData = Json.createReader(new StringReader(responseStr))
+                                        .readObject();
+        assertTrue(rootData.getString("content")
+                           .startsWith("# Java Home"));
+
+    }
+
+    @Test
+    public void testPost() throws Exception {
+        final Resource resource = new Resource();
+        resource.setPath("Java");
+        final String response = ClientBuilder.newClient()
+                                             .target(UriBuilder.fromPath(this.base + "api" + BlikiService.PATH)
+                                                               .build())
+                                             .request()
+                                             .post(Entity.entity(resource, MediaType.APPLICATION_JSON), String.class);
+        System.out.println("response = " + response);
+        assertThat(response, notNullValue());
+
+        final JsonObject data = Json.createReader(new StringReader(response))
+                                    .readObject();
+        final JsonObject folder = data.getJsonObject("folder");
+        assertThat(folder.getString("path"), is("Java"));
+        assertThat(folder.getJsonArray("files")
+                         .size(), is(2));
+        assertThat(folder.getJsonArray("files")
+                         .getString(0), is("home.md"));
+    }
+
+    @Test
+    public void testRoot() throws Exception {
+
+        final String root = ClientBuilder.newClient()
+                                         .target(UriBuilder.fromPath(this.base + "api" + BlikiService.PATH)
+                                                           .build())
+                                         .request(MediaType.APPLICATION_JSON)
+                                         .get(String.class);
+
+        System.out.println("data = " + root);
+        assertThat(root, notNullValue());
+
+        final JsonObject rootData = Json.createReader(new StringReader(root))
+                                        .readObject();
+
+        final String baseUri = rootData.getString("baseUri");
+        assertThat(baseUri, endsWith("/api/bliki"));
+        final String browseUri = rootData.getString("browseUri");
+        assertThat(browseUri, endsWith("/api/bliki/"));
+
+
+        final JsonObject folder = rootData.getJsonObject("folder");
+        final JsonArray folders = folder.getJsonArray("folders");
+        assertThat(folders.size(), is(2));
+        assertThat(folder.getString("path"), is(""));
+        assertThat(folder.getJsonArray("files")
+                         .size(), is(1));
+
+        final String newFolder = folders.getString(0);
+        final String java = ClientBuilder.newClient()
+                                         .target(UriBuilder.fromPath(this.base + "api/bliki/" + newFolder)
+                                                           .build())
+                                         .request(MediaType.APPLICATION_JSON)
+                                         .get(String.class);
+        final JsonObject javaData = Json.createReader(new StringReader(java))
+                                        .readObject();
+
+        System.out.println("data = " + javaData);
+        assertThat(root, notNullValue());
+
+        final JsonObject javaFolder = javaData.getJsonObject("folder");
+        assertThat(javaFolder.getString("path"), is(newFolder));
+        assertThat(javaFolder.getJsonArray("files")
+                             .size(), is(2));
+
+    }
 
     @Deployment
     public static Archive<?> createDeployment() {
@@ -69,7 +179,7 @@ public class EpubServiceIT {
                                          .addPackage(BootStrap.class.getPackage())
                                          .addPackage(Directory.class.getPackage())
                                          .addPackage(Metadata.class.getPackage())
-                                         .addPackage(EpubService.class.getPackage())
+                                         .addPackage(BlikiService.class.getPackage())
                                          .filter(new ExcludeRegExpPaths(".*Test.class"))
                                          .filter(new ExcludeRegExpPaths(".*IT.class"))
                                          .addAsResource("application.properties")
@@ -82,125 +192,6 @@ public class EpubServiceIT {
                                          .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
         System.out.println(war.toString(true));
         return war;
-
-
-    }
-
-    @Test
-    public void testPostDownload() throws Exception {
-        final Resource resourceName = new Resource();
-        resourceName.setName("Stoker, Bram/pg345.epub");
-        final Response response = ClientBuilder.newClient()
-                                               .target(UriBuilder.fromPath(
-                                                       this.base + "api" + EpubService.PATH + EpubService.DOWNLOAD)
-                                                                 .build())
-                                               .request()
-                                               .post(Entity.entity(resourceName, MediaType.APPLICATION_JSON),
-                                                     Response.class);
-
-        assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-        assertTrue(response.hasEntity());
-        final File file = response.readEntity(File.class);
-        assertNotNull(file);
-        assertTrue(new ZipFile(file).stream()
-                                    .filter(resource -> resource.getName()
-                                                                .contains("toc"))
-                                    .findAny()
-                                    .isPresent());
-    }
-
-    @Test
-    public void testPostDownloadWrongFile() throws Exception {
-        final Resource resource = new Resource();
-        resource.setPath("Stoker, Bram/");
-        resource.setName("I do not exist.epub");
-        final Response response = ClientBuilder.newClient()
-                                               .target(UriBuilder.fromPath(
-                                                       this.base + "api" + EpubService.PATH + EpubService.DOWNLOAD)
-                                                                 .build())
-                                               .request()
-                                               .post(Entity.entity(resource, MediaType.APPLICATION_JSON),
-                                                     Response.class);
-
-        assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
-    }
-
-
-    @Test
-    public void testPost() throws Exception {
-        final Resource resource = new Resource();
-        resource.setPath("Stoker, Bram");
-        final String response = ClientBuilder.newClient()
-                                             .target(UriBuilder.fromPath(this.base + "api" + EpubService.PATH)
-                                                               .build())
-                                             .request()
-                                             .post(Entity.entity(resource, MediaType.APPLICATION_JSON),
-                                                   String.class);
-        System.out.println("response = " + response);
-        assertThat(response, notNullValue());
-
-        final JsonObject data = Json.createReader(new StringReader(response))
-                                    .readObject();
-        final JsonObject folder = data.getJsonObject("folder");
-        assertThat(folder.getString("path"), is("Stoker, Bram"));
-        assertThat(folder.getJsonArray("files")
-                         .size(), is(1));
-        assertThat(folder.getJsonArray("files")
-                         .getString(0), is("pg345.epub"));
-
-
-    }
-
-
-    // {"baseUri":"http://127.0.0.1:8080/1d6a8823-a1eb-44be-91c6-c38c2cfa91e6/api/folders","browseUri":"http://127.0
-    // .0.1:8080/1d6a8823-a1eb-44be-91c6-c38c2cfa91e6/api/folders/","fileUri":null,"downloadUri":null,
-    // "folder":{"folders":["Stoker, Bram","Twain, Mark"],"files":[],"path":""}}
-    @Test
-    public void testRoot() throws Exception {
-
-        final String root = ClientBuilder.newClient()
-                                         .target(UriBuilder.fromPath(this.base + "api" + EpubService.PATH)
-                                                           .build())
-                                         .request(MediaType.APPLICATION_JSON)
-                                         .get(String.class);
-
-        System.out.println("data = " + root);
-        assertThat(root, notNullValue());
-
-        final JsonObject rootData = Json.createReader(new StringReader(root))
-                                        .readObject();
-
-        final String baseUri = rootData.getString("baseUri");
-        assertThat(baseUri, endsWith("/api/epub"));
-        final String browseUri = rootData.getString("browseUri");
-        assertThat(browseUri, endsWith("/api/epub/"));
-
-
-        final JsonObject folder = rootData.getJsonObject("folder");
-        final JsonArray folders = folder.getJsonArray("folders");
-        assertThat(folders.size(), is(2));
-        assertThat(folder.getString("path"), is(""));
-        assertThat(folder.getJsonArray("files")
-                         .size(), is(0));
-        final String newFolder = folders.getString(0);
-
-
-        final String bramStoker = ClientBuilder.newClient()
-                                               .target(UriBuilder.fromPath(this.base + "api/epub/" + newFolder)
-                                                                 .build())
-                                               .request(MediaType.APPLICATION_JSON)
-                                               .get(String.class);
-        final JsonObject bramStokerData = Json.createReader(new StringReader(bramStoker))
-                                              .readObject();
-
-        System.out.println("data = " + bramStokerData);
-        assertThat(root, notNullValue());
-
-        final JsonObject bramStrokerFolder = bramStokerData.getJsonObject("folder");
-        assertThat(bramStrokerFolder.getString("path"), is(newFolder));
-        assertThat(bramStrokerFolder.getJsonArray("files")
-                                    .size(), is(1));
-
     }
 
 }

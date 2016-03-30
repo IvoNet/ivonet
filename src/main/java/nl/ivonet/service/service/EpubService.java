@@ -22,6 +22,7 @@ import nl.ivonet.service.directory.EpubDirectory;
 import nl.ivonet.service.model.Data;
 import nl.ivonet.service.model.Resource;
 
+import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -42,12 +43,17 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * @author Ivo Woltring
  */
 @Stateless
-@Path(EpubService.EPUB)
+@Path(EpubService.PATH)
 public class EpubService {
-    static final String EPUB = "/epub";
+    static final String PATH = "/epub";
     static final String DOWNLOAD = "/download";
     private static final String APPLICATION_X_CBR = "application/x-cbr";
 
+
+    private String baseUri;
+    private String browseUri;
+    private String fileUri;
+    private String downloadUri;
 
     @Context
     UriInfo uriInfo;
@@ -60,41 +66,18 @@ public class EpubService {
     @Property("epub.folder")
     String epubFolder;
 
-    private Data retrieveData(final String folder) {
-        final Data data = new Data(this.directory.folder(folder));
-        data.setBaseUri(this.uriInfo.getBaseUriBuilder()
-                                    .path(this.getClass())
-                                    .build()
-                                    .toString());
-        data.setBrowseUri(this.uriInfo.getBaseUriBuilder()
-                                      .path(this.getClass())
-                                      .path("/")
-                                      .build()
-                                      .toString());
-//        data.setFileUri(this.uriInfo.getBaseUriBuilder()
-//                                    .path(DOWNLOAD)
-//                                    .build()
-//                                    .toString());
-        data.setDownloadUri(this.uriInfo.getBaseUriBuilder()
-                                        .path(DOWNLOAD)
-                                        .build()
-                                        .toString());
-        return data;
-    }
-
     @GET
     @Produces(APPLICATION_JSON)
     public Data root() {
-        return retrieveData("");
+        return retrievedata("");
     }
-
 
     // FIXME: 26-03-2016 remove me when post completely works
     @GET
     @Produces(APPLICATION_JSON)
     @Path("/{folder: .+}")
     public Response folder(@PathParam("folder") final String folder) {
-        return Response.ok(retrieveData(folder))
+        return Response.ok(retrievedata(folder))
                        .build();
     }
 
@@ -103,9 +86,10 @@ public class EpubService {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     public Response folderByJson(final Resource resource) {
-        return Response.ok(retrieveData(resource.resource()))
+        return Response.ok(retrievedata(resource.resource()))
                        .build();
     }
+
 
     @POST
     @Produces(APPLICATION_X_CBR)
@@ -123,4 +107,36 @@ public class EpubService {
         return Response.status(Response.Status.NOT_FOUND)
                        .build();
     }
+
+    private Data retrievedata(final String folder) {
+        final Data data = new Data(this.directory.folder(folder));
+        addMetadata(data);
+        return data;
+    }
+
+    private void addMetadata(final Data data) {
+        data.setMetadata(this.baseUri, this.browseUri, this.fileUri, this.downloadUri);
+    }
+
+    @PostConstruct
+    public void init() {
+        this.baseUri = this.uriInfo.getBaseUriBuilder()
+                                   .path(this.getClass())
+                                   .build()
+                                   .toString();
+        this.browseUri = this.uriInfo.getBaseUriBuilder()
+                                     .path(this.getClass())
+                                     .path("/")
+                                     .build()
+                                     .toString();
+        this.fileUri = this.uriInfo.getBaseUriBuilder()
+                                   .path(DOWNLOAD)
+                                   .build()
+                                   .toString();
+        this.downloadUri = this.uriInfo.getBaseUriBuilder()
+                                       .path(DOWNLOAD)
+                                       .build()
+                                       .toString();
+    }
+
 }

@@ -25,6 +25,18 @@ public class Metadata {
     private String fileUri;
     private String downloadUri;
 
+    public void setMetadata(final String baseUri, final String browseUri, final String fileUri, final String downloadUri) {
+        this.baseUri = baseUri;
+        this.browseUri = browseUri;
+        this.fileUri = fileUri;
+        this.downloadUri = downloadUri;
+
+    }
+
+    private String endSlash(final String path) {
+        return path.endsWith("/") ? path : (path + "/");
+    }
+
     public String getBaseUri() {
         return this.baseUri;
     }

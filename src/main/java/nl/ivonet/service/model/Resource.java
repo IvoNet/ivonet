@@ -24,7 +24,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @author Ivo Woltring
  */
 @XmlRootElement
-public class Resource {
+public class Resource extends Metadata{
 
     @XmlElement
     private String path;
