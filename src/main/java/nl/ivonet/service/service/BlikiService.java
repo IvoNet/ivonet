@@ -121,7 +121,7 @@ public class BlikiService {
     // TODO: 30-03-2016 Hacking attempts like /../.. paths should be refused
     @GET
     @Produces(APPLICATION_JSON)
-    @Path("/md/{mmd: .+md}")
+    @Path("/{mmd: .+\\.md}")
     public Response downloadget(@PathParam("mmd") final String mmd) {
 //        if (!endSlash(path.getCanonicalPath()).startsWith(documentRoot) &&
 //            (file.contains("/..") || file.contains("%2f..") || file.contains(("%2F..")))) {

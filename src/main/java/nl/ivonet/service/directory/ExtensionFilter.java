@@ -39,10 +39,11 @@ class ExtensionFilter implements DirectoryStream.Filter<Path> {
 
     @Override
     public boolean accept(final Path entry) throws IOException {
-        return Files.isRegularFile(entry) && isAcceptable(entry);
+        return Files.isRegularFile(entry) && !Files.isHidden(entry) && isAcceptable(entry);
     }
 
     private boolean isAcceptable(final Path entry) {
+
         final String[] split = this.filterExtensions.toLowerCase(Locale.US)
                                                     .split(DELIMETER);
         return Stream.of(split)
