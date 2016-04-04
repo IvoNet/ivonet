@@ -22,7 +22,6 @@ import nl.ivonet.service.directory.EpubDirectory;
 import nl.ivonet.service.model.Data;
 import nl.ivonet.service.model.Resource;
 
-import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -48,12 +47,6 @@ public class EpubService {
     static final String PATH = "/epub";
     static final String DOWNLOAD = "/download";
     private static final String APPLICATION_X_CBR = "application/x-cbr";
-
-
-    private String baseUri;
-    private String browseUri;
-    private String fileUri;
-    private String downloadUri;
 
     @Context
     UriInfo uriInfo;
@@ -115,28 +108,25 @@ public class EpubService {
     }
 
     private void addMetadata(final Data data) {
-        data.setMetadata(this.baseUri, this.browseUri, this.fileUri, this.downloadUri);
-    }
-
-    @PostConstruct
-    public void init() {
-        this.baseUri = this.uriInfo.getBaseUriBuilder()
-                                   .path(this.getClass())
-                                   .build()
-                                   .toString();
-        this.browseUri = this.uriInfo.getBaseUriBuilder()
-                                     .path(this.getClass())
-                                     .path("/")
-                                     .build()
-                                     .toString();
-        this.fileUri = this.uriInfo.getBaseUriBuilder()
-                                   .path(DOWNLOAD)
-                                   .build()
-                                   .toString();
-        this.downloadUri = this.uriInfo.getBaseUriBuilder()
-                                       .path(DOWNLOAD)
-                                       .build()
-                                       .toString();
+        final String baseUri = this.uriInfo.getBaseUriBuilder()
+                                           .path(getClass())
+                                           .build()
+                                           .toString();
+        final String browseUri = this.uriInfo.getBaseUriBuilder()
+                                             .path(getClass())
+                                             .path("/")
+                                             .build()
+                                             .toString();
+        final String fileUri = this.uriInfo.getBaseUriBuilder()
+                                           .path(DOWNLOAD)
+                                           .build()
+                                           .toString();
+        final String downloadUri = this.uriInfo.getBaseUriBuilder()
+                                               .path(DOWNLOAD)
+                                               .build()
+                                               .toString();
+        
+        data.setMetadata(baseUri, browseUri, fileUri, downloadUri);
     }
 
 }

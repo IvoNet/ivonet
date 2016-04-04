@@ -19,7 +19,6 @@ package nl.ivonet.service.service;
 import nl.ivonet.service.config.BootStrap;
 import nl.ivonet.service.directory.Directory;
 import nl.ivonet.service.model.Metadata;
-import nl.ivonet.service.model.Resource;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
@@ -36,7 +35,6 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -63,34 +61,15 @@ public class BlikiServiceIT {
     @ArquillianResource
     private URL base;
 
-    @Test
-    public void testPostDownloadWrongFile() throws Exception {
-        final Resource resource = new Resource();
-        resource.setPath("Java");
-        resource.setName("I do not exist.md");
-        final Response response = ClientBuilder.newClient()
-                                               .target(UriBuilder.fromPath(
-                                                       this.base + "api" + BlikiService.PATH + BlikiService.DOWNLOAD)
-                                                                 .build())
-                                               .request()
-                                               .post(Entity.entity(resource, MediaType.APPLICATION_JSON),
-                                                     Response.class);
-
-        assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
-    }
 
     @Test
     public void testDownload() throws Exception {
-        final Resource resource = new Resource();
-        resource.setPath("Java");
-        resource.setName("home.md");
         final Response response = ClientBuilder.newClient()
                                                .target(UriBuilder.fromPath(
-                                                       this.base + "api" + BlikiService.PATH + BlikiService.DOWNLOAD)
-                                                                 .build())
-                                               .request()
-                                               .post(Entity.entity(resource, MediaType.APPLICATION_JSON),
-                                                     Response.class);
+                                                       this.base + "api" + BlikiService.PATH + "/Java/home.md")
+                                                                                                        .build())
+                                               .request(MediaType.APPLICATION_JSON)
+                                               .get(Response.class);
         assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
         assertTrue(response.hasEntity());
         final File file = response.readEntity(File.class);
@@ -104,27 +83,6 @@ public class BlikiServiceIT {
 
     }
 
-    @Test
-    public void testPost() throws Exception {
-        final Resource resource = new Resource();
-        resource.setPath("Java");
-        final String response = ClientBuilder.newClient()
-                                             .target(UriBuilder.fromPath(this.base + "api" + BlikiService.PATH)
-                                                               .build())
-                                             .request()
-                                             .post(Entity.entity(resource, MediaType.APPLICATION_JSON), String.class);
-        System.out.println("response = " + response);
-        assertThat(response, notNullValue());
-
-        final JsonObject data = Json.createReader(new StringReader(response))
-                                    .readObject();
-        final JsonObject folder = data.getJsonObject("folder");
-        assertThat(folder.getString("path"), is("Java"));
-        assertThat(folder.getJsonArray("files")
-                         .size(), is(2));
-        assertThat(folder.getJsonArray("files")
-                         .getString(0), is("home.md"));
-    }
 
     @Test
     public void testRoot() throws Exception {
@@ -156,8 +114,7 @@ public class BlikiServiceIT {
 
         final String newFolder = folders.getString(0);
         final String java = ClientBuilder.newClient()
-                                         .target(UriBuilder.fromPath(this.base + "api/bliki/" + newFolder)
-                                                           .build())
+                                         .target(rootData.getString("browseUri") + newFolder)
                                          .request(MediaType.APPLICATION_JSON)
                                          .get(String.class);
         final JsonObject javaData = Json.createReader(new StringReader(java))
