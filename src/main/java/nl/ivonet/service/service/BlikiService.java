@@ -43,6 +43,10 @@ import java.nio.file.Paths;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
+ * Service for bliki endpoints.
+ *
+ * Without params it will return the root directory and file structure.
+ *
  * @author Ivo Woltring
  */
 @Stateless
@@ -74,7 +78,6 @@ public class BlikiService {
         return retrieveData("");
     }
 
-    // FIXME: 26-03-2016 remove me when post completely works
     @GET
     @Produces(APPLICATION_JSON)
     @Path("/{folder: .+}")
@@ -83,7 +86,7 @@ public class BlikiService {
                        .build();
     }
 
-
+    // TODO: 30-03-2016 This method is probably not a good idea in the REST scheme of things. It should be a get...
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
@@ -92,7 +95,7 @@ public class BlikiService {
                        .build();
     }
 
-
+    // TODO: 30-03-2016 Download should probably be a GET in the REST way of working
     @POST
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
@@ -111,10 +114,21 @@ public class BlikiService {
         }
     }
 
+//    private String endSlash(final String input) {
+//        return input.endsWith("/") ? input : input + File.separator;
+//    }
+
+    // TODO: 30-03-2016 Hacking attempts like /../.. paths should be refused
     @GET
     @Produces(APPLICATION_JSON)
     @Path("/md/{mmd: .+md}")
     public Response downloadget(@PathParam("mmd") final String mmd) {
+//        if (!endSlash(path.getCanonicalPath()).startsWith(documentRoot) &&
+//            (file.contains("/..") || file.contains("%2f..") || file.contains(("%2F..")))) {
+////            Build in for security reasons. Relative paths would allow for browsing outside the documentRoot
+//            throw new UnsupportedOperationException("Relative paths are not supported.");
+//        }
+
         System.out.println("mmd = " + mmd);
         try {
             final Content content = new Content(Files.readAllBytes(Paths.get(this.blikiFolder, mmd)));
@@ -138,7 +152,6 @@ public class BlikiService {
     private void addMetadata(final Metadata metadata) {
         metadata.setMetadata(this.baseUri, this.browseUri, this.fileUri, this.downloadUri);
     }
-
 
     @PostConstruct
     public void init() {

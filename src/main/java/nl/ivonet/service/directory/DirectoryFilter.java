@@ -29,7 +29,7 @@ public class DirectoryFilter implements DirectoryStream.Filter<Path> {
     @Override
     public boolean accept(final Path entry) throws IOException {
         try {
-            return (Files.isDirectory(entry));
+            return (Files.isDirectory(entry) && !Files.isHidden(entry));
         } catch (final Exception e) {
             return false;
         }
