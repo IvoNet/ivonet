@@ -31,6 +31,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.file.Paths;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -66,7 +68,7 @@ public class EpubService {
     @Produces(APPLICATION_JSON)
     @Path("/{folder: .+}")
     public Response folder(@PathParam("folder") final String folder) {
-        return Response.ok(retrievedata(folder))
+        return Response.ok(retrievedata(urlDecode(folder)))
                        .build();
     }
 
@@ -76,44 +78,63 @@ public class EpubService {
     @Path("/download/{file: .+epub}")
     @Produces(APPLICATION_EPUB)
     public Response download(@PathParam("file") final String filename) {
-        final File file = Paths.get(this.epubFolder, filename)
+        System.out.println("urlDecode(filename = " + urlDecode(filename));
+        final File file = Paths.get(this.epubFolder, urlDecode(filename))
                                .toFile();
         if (file.exists()) {
+            System.out.println("yep found!!!");
             return Response.ok()
                            .type(APPLICATION_EPUB)
                            .entity(file)
                            .build();
         }
+        System.out.println("Nope not found!!!");
         return Response.status(Response.Status.NOT_FOUND)
                        .build();
+    }
 
+    private String urlDecode(final String path) {
+        try {
+            return URLDecoder.decode(path, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Data retrievedata(final String folder) {
-        final Data data = new Data(this.directory.folder(folder));
-        addMetadata(data);
-        return data;
+        return new Data(this.directory.folder(folder), baseUri(), browseUri(), fileUri(), downloadUri());
     }
 
-    private void addMetadata(final Data data) {
-        final String baseUri = this.uriInfo.getBaseUriBuilder()
-                                           .path(getClass())
-                                           .build()
-                                           .toString();
-        final String browseUri = this.uriInfo.getBaseUriBuilder()
-                                             .path(getClass())
-                                             .path("/")
-                                             .build()
-                                             .toString();
-        final String fileUri = this.uriInfo.getBaseUriBuilder()
-                                           .path(DOWNLOAD)
-                                           .build()
-                                           .toString();
-        final String downloadUri = this.uriInfo.getBaseUriBuilder()
-                                               .path(DOWNLOAD)
-                                               .build()
-                                               .toString();
-        data.setMetadata(baseUri, browseUri, fileUri, downloadUri);
+    private String baseUri() {
+        return this.uriInfo.getBaseUriBuilder()
+                           .path(getClass())
+                           .build()
+                           .toString();
     }
+
+    private String browseUri() {
+        return this.uriInfo.getBaseUriBuilder()
+                           .path(getClass())
+                           .path("/")
+                           .build()
+                           .toString();
+    }
+
+    private String fileUri() {
+        return this.uriInfo.getBaseUriBuilder()
+                           .path(getClass())
+                           .path("/meta")
+                           .build()
+                           .toString();
+    }
+
+    private String downloadUri() {
+        return this.uriInfo.getBaseUriBuilder()
+                           .path(getClass())
+                           .path(DOWNLOAD)
+                           .build()
+                           .toString();
+    }
+
 
 }

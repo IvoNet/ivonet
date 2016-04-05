@@ -21,7 +21,6 @@ import nl.ivonet.service.directory.BlikiDirectory;
 import nl.ivonet.service.directory.Directory;
 import nl.ivonet.service.model.Content;
 import nl.ivonet.service.model.Data;
-import nl.ivonet.service.model.Metadata;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
@@ -33,6 +32,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -82,8 +83,8 @@ public class BlikiService {
 
         System.out.println("mmd = " + mmd);
         try {
-            final Content content = new Content(Files.readAllBytes(Paths.get(this.blikiFolder, mmd)));
-            addMetadata(content);
+            final Content content = new Content(Files.readAllBytes(Paths.get(this.blikiFolder, urlDecode(mmd))));
+//            addMetadata(content);
             return Response.ok()
                            .type(APPLICATION_JSON)
                            .entity(content)
@@ -98,36 +99,54 @@ public class BlikiService {
     @Produces(APPLICATION_JSON)
     @Path("/{folder: .+(?<!\\.md)$}") //lookbehind not ending with .md
     public Response folder(@PathParam("folder") final String folder) {
-        return Response.ok(retrieveData(folder))
+        return Response.ok(retrieveData(urlDecode(folder)))
                        .build();
     }
 
-    private Data retrieveData(final String folder) {
-        final Data data = new Data(this.directory.folder(folder));
-        addMetadata(data);
-        return data;
+    private String urlDecode(final String path) {
+        try {
+            return URLDecoder.decode(path, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private void addMetadata(final Metadata metadata) {
-        final String baseUri = this.uriInfo.getBaseUriBuilder()
-                                           .path(getClass())
-                                           .build()
-                                           .toString();
-         final String browseUri = this.uriInfo.getBaseUriBuilder()
-                                              .path(getClass())
-                                              .path("/")
-                                              .build()
-                                              .toString();
-         final String fileUri = this.uriInfo.getBaseUriBuilder()
-                                            .path("/")
-                                            .build()
-                                            .toString();
-         final String downloadUri = this.uriInfo.getBaseUriBuilder()
-                                                .path("/")
-                                                .build()
-                                                .toString();
-        metadata.setMetadata(baseUri, browseUri, fileUri, downloadUri);
+
+    private Data retrieveData(final String folder) {
+        return new Data(this.directory.folder(folder), baseUri(), browseUri(), fileUri(), downloadUri());
     }
+
+    private String baseUri() {
+        return this.uriInfo.getBaseUriBuilder()
+                           .path(getClass())
+                           .build()
+                           .toString();
+    }
+
+    private String browseUri() {
+        return this.uriInfo.getBaseUriBuilder()
+                           .path(getClass())
+                           .path("/")
+                           .build()
+                           .toString();
+    }
+
+    private String fileUri() {
+        return this.uriInfo.getBaseUriBuilder()
+                           .path(getClass())
+                           .path("/")
+                           .build()
+                           .toString();
+    }
+
+    private String downloadUri() {
+        return this.uriInfo.getBaseUriBuilder()
+                           .path(getClass())
+                           .path("/")
+                           .build()
+                           .toString();
+    }
+
 
 
 }

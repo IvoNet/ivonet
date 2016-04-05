@@ -32,7 +32,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.json.Json;
-import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.MediaType;
@@ -96,34 +95,34 @@ public class BlikiServiceIT {
         final JsonObject rootData = Json.createReader(new StringReader(root))
                                         .readObject();
 
-        final String baseUri = rootData.getString("baseUri");
-        assertThat(baseUri, endsWith("/api/bliki"));
-        final String browseUri = rootData.getString("browseUri");
-        assertThat(browseUri, endsWith("/api/bliki/"));
+        final String path = rootData.getString("pathUri");
+        assertThat(path, endsWith("/api/bliki/"));
 
+        final JsonObject foldersMap = rootData.getJsonObject("folders");
+        final String javaFolder = foldersMap.getString("Java");
+        System.out.println("javaFolder = " + javaFolder);
+        assertThat(javaFolder, endsWith("/api/bliki/Java"));
+        assertThat(foldersMap.size(), is(2));
 
-        final JsonObject folder = rootData.getJsonObject("folder");
-        final JsonArray folders = folder.getJsonArray("folders");
-        assertThat(folders.size(), is(2));
-        assertThat(folder.getString("path"), is(""));
-        assertThat(folder.getJsonArray("files")
-                         .size(), is(1));
+        final JsonObject browseFiles = rootData.getJsonObject("browseFiles");
+        assertThat(browseFiles.getString("home.md"), endsWith("/api/bliki/%2Fhome.md"));
+        assertThat(browseFiles.size(), is(1));
 
-        final String newFolder = folders.getString(0);
-        final String java = ClientBuilder.newClient()
-                                         .target(rootData.getString("browseUri") + newFolder)
-                                         .request(MediaType.APPLICATION_JSON)
-                                         .get(String.class);
-        final JsonObject javaData = Json.createReader(new StringReader(java))
-                                        .readObject();
+//        final String newFolder = folders.getString(0);
+//        final String java = ClientBuilder.newClient()
+//                                         .target(rootData.getString("javaFolder") + newFolder)
+//                                         .request(MediaType.APPLICATION_JSON)
+//                                         .get(String.class);
+//        final JsonObject javaData = Json.createReader(new StringReader(java))
+//                                        .readObject();
+//
+//        System.out.println("data = " + javaData);
+//        assertThat(root, notNullValue());
 
-        System.out.println("data = " + javaData);
-        assertThat(root, notNullValue());
-
-        final JsonObject javaFolder = javaData.getJsonObject("folder");
-        assertThat(javaFolder.getString("path"), is(newFolder));
-        assertThat(javaFolder.getJsonArray("files")
-                             .size(), is(2));
+//        final JsonObject javaFolder = javaData.getJsonObject("folder");
+//        assertThat(javaFolder.getString("path"), is(newFolder));
+//        assertThat(javaFolder.getJsonArray("files")
+//                             .size(), is(2));
     }
 
     @Deployment
