@@ -20,13 +20,10 @@ import nl.ivonet.service.config.Property;
 import nl.ivonet.service.directory.Directory;
 import nl.ivonet.service.directory.EpubDirectory;
 import nl.ivonet.service.model.Data;
-import nl.ivonet.service.model.Resource;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -46,7 +43,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public class EpubService {
     static final String PATH = "/epub";
     static final String DOWNLOAD = "/download";
-    private static final String APPLICATION_X_CBR = "application/x-cbr";
+    private static final String APPLICATION_EPUB = "application/epub+zip";
 
     @Context
     UriInfo uriInfo;
@@ -65,7 +62,6 @@ public class EpubService {
         return retrievedata("");
     }
 
-    // FIXME: 26-03-2016 remove me when post completely works
     @GET
     @Produces(APPLICATION_JSON)
     @Path("/{folder: .+}")
@@ -74,31 +70,23 @@ public class EpubService {
                        .build();
     }
 
+    // TODO: 05-04-2016 create @GET for Epub Metadata
 
-    @POST
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    public Response folderByJson(final Resource resource) {
-        return Response.ok(retrievedata(resource.resource()))
-                       .build();
-    }
-
-
-    @POST
-    @Produces(APPLICATION_X_CBR)
-    @Consumes(APPLICATION_JSON)
-    @Path(DOWNLOAD)
-    public Response download(final Resource resource) {
-        final File file = Paths.get(this.epubFolder, resource.resource())
+    @GET
+    @Path("/download/{file: .+epub}")
+    @Produces(APPLICATION_EPUB)
+    public Response download(@PathParam("file") final String filename) {
+        final File file = Paths.get(this.epubFolder, filename)
                                .toFile();
         if (file.exists()) {
             return Response.ok()
-                           .type(APPLICATION_X_CBR)
+                           .type(APPLICATION_EPUB)
                            .entity(file)
                            .build();
         }
         return Response.status(Response.Status.NOT_FOUND)
                        .build();
+
     }
 
     private Data retrievedata(final String folder) {
@@ -125,7 +113,6 @@ public class EpubService {
                                                .path(DOWNLOAD)
                                                .build()
                                                .toString();
-        
         data.setMetadata(baseUri, browseUri, fileUri, downloadUri);
     }
 

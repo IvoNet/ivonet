@@ -36,7 +36,6 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -92,11 +91,11 @@ public class EpubServiceIT {
         resourceName.setName("Stoker, Bram/pg345.epub");
         final Response response = ClientBuilder.newClient()
                                                .target(UriBuilder.fromPath(
-                                                       this.base + "api" + EpubService.PATH + EpubService.DOWNLOAD)
+                                                       this.base + "api" + EpubService.PATH + EpubService.DOWNLOAD
+                                                       + "/Stoker, Bram/pg345.epub")
                                                                  .build())
                                                .request()
-                                               .post(Entity.entity(resourceName, MediaType.APPLICATION_JSON),
-                                                     Response.class);
+                                               .get(Response.class);
 
         assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
         assertTrue(response.hasEntity());
@@ -111,16 +110,13 @@ public class EpubServiceIT {
 
     @Test
     public void testPostDownloadWrongFile() throws Exception {
-        final Resource resource = new Resource();
-        resource.setPath("Stoker, Bram/");
-        resource.setName("I do not exist.epub");
         final Response response = ClientBuilder.newClient()
                                                .target(UriBuilder.fromPath(
-                                                       this.base + "api" + EpubService.PATH + EpubService.DOWNLOAD)
+                                                       this.base + "api" + EpubService.PATH + EpubService.DOWNLOAD
+                                                       + "/Stoker, Bram/I do not exist.epub")
                                                                  .build())
                                                .request()
-                                               .post(Entity.entity(resource, MediaType.APPLICATION_JSON),
-                                                     Response.class);
+                                               .get(Response.class);
 
         assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
     }
@@ -128,14 +124,12 @@ public class EpubServiceIT {
 
     @Test
     public void testPost() throws Exception {
-        final Resource resource = new Resource();
-        resource.setPath("Stoker, Bram");
         final String response = ClientBuilder.newClient()
-                                             .target(UriBuilder.fromPath(this.base + "api" + EpubService.PATH)
+                                             .target(UriBuilder.fromPath(
+                                                     this.base + "api" + EpubService.PATH + "/Stoker, Bram")
                                                                .build())
                                              .request()
-                                             .post(Entity.entity(resource, MediaType.APPLICATION_JSON),
-                                                   String.class);
+                                             .get(String.class);
         System.out.println("response = " + response);
         assertThat(response, notNullValue());
 
@@ -151,10 +145,6 @@ public class EpubServiceIT {
 
     }
 
-
-    // {"baseUri":"http://127.0.0.1:8080/1d6a8823-a1eb-44be-91c6-c38c2cfa91e6/api/folders","browseUri":"http://127.0
-    // .0.1:8080/1d6a8823-a1eb-44be-91c6-c38c2cfa91e6/api/folders/","fileUri":null,"downloadUri":null,
-    // "folder":{"folders":["Stoker, Bram","Twain, Mark"],"files":[],"path":""}}
     @Test
     public void testRoot() throws Exception {
 

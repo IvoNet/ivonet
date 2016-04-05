@@ -67,7 +67,7 @@ public class BlikiServiceIT {
         final Response response = ClientBuilder.newClient()
                                                .target(UriBuilder.fromPath(
                                                        this.base + "api" + BlikiService.PATH + "/Java/home.md")
-                                                                                                        .build())
+                                                                 .build())
                                                .request(MediaType.APPLICATION_JSON)
                                                .get(Response.class);
         assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -80,13 +80,10 @@ public class BlikiServiceIT {
                                         .readObject();
         assertTrue(rootData.getString("content")
                            .startsWith("# Java Home"));
-
     }
-
 
     @Test
     public void testRoot() throws Exception {
-
         final String root = ClientBuilder.newClient()
                                          .target(UriBuilder.fromPath(this.base + "api" + BlikiService.PATH)
                                                            .build())
@@ -127,7 +124,6 @@ public class BlikiServiceIT {
         assertThat(javaFolder.getString("path"), is(newFolder));
         assertThat(javaFolder.getJsonArray("files")
                              .size(), is(2));
-
     }
 
     @Deployment
