@@ -19,7 +19,6 @@ package nl.ivonet.service.service;
 import nl.ivonet.service.config.BootStrap;
 import nl.ivonet.service.directory.Directory;
 import nl.ivonet.service.model.Metadata;
-import nl.ivonet.service.model.Resource;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
@@ -33,9 +32,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.File;
@@ -44,6 +44,7 @@ import java.net.URL;
 import java.util.zip.ZipFile;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
@@ -86,15 +87,7 @@ public class EpubServiceIT {
 
     @Test
     public void testGetDownload() throws Exception {
-        final Resource resourceName = new Resource();
-        resourceName.setName("Stoker, Bram/pg345.epub");
-        final Response response = ClientBuilder.newClient()
-                                               .target(UriBuilder.fromPath(
-                                                       this.base + "api" + EpubService.PATH + EpubService.DOWNLOAD
-                                                       + "/Stoker, Bram/pg345.epub")
-                                                                 .build())
-                                               .request()
-                                               .get(Response.class);
+        final Response response = getResponse(EpubService.DOWNLOAD + "/Stoker, Bram/pg345.epub");
 
         assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
         assertTrue(response.hasEntity());
@@ -109,88 +102,107 @@ public class EpubServiceIT {
 
     @Test
     public void testGetDownloadWrongFile() throws Exception {
-        final Response response = ClientBuilder.newClient()
-                                               .target(UriBuilder.fromPath(
-                                                       this.base + "api" + EpubService.PATH + EpubService.DOWNLOAD
-                                                       + "/Stoker, Bram/I do not exist.epub")
-                                                                 .build())
-                                               .request()
-                                               .get(Response.class);
+        final Response response = getResponse(EpubService.DOWNLOAD + "/Stoker, Bram/I do not exist.epub");
 
         assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
     }
 
-
     @Test
     public void testGet() throws Exception {
-        final String response = ClientBuilder.newClient()
-                                             .target(UriBuilder.fromPath(
-                                                     this.base + "api" + EpubService.PATH + "/Stoker, Bram")
-                                                               .build())
-                                             .request()
-                                             .get(String.class);
-//        System.out.println("response = " + response);
-        assertThat(response, notNullValue());
 
-        final JsonObject data = Json.createReader(new StringReader(response))
-                                    .readObject();
+        final JsonObject data = getResponseAsJson("/Stoker, Bram");
+
         assertThat(data.getString("path"), is("Stoker, Bram"));
-        final JsonObject folder = data.getJsonObject("folders");
+        final JsonArray folder = data.getJsonArray("folders");
         assertThat(folder.size(), is(0));
 
-        final String browseFiles = data.getJsonObject("browseFiles")
-                                         .getString("pg345.epub");
-        assertThat(browseFiles, endsWith("/api/epub/meta/Stoker%2C+Bram%2Fpg345.epub"));
+        final JsonArray browseFiles1 = data.getJsonArray("browseFiles");
+        final JsonObject jsonObject = browseFiles1.getJsonObject(0);
+        final String key = jsonObject.getString("key");
+        assertThat(key, endsWith("pg345.epub"));
+        final String value = jsonObject.getString("value");
+        assertThat(value, endsWith("/api/epub/meta/Stoker%2C+Bram%2Fpg345.epub"));
 
 
     }
 
     @Test
-    public void testRoot() throws Exception {
+    public void testThroughApi() throws Exception {
 
-        final String root = ClientBuilder.newClient()
-                                         .target(UriBuilder.fromPath(this.base + "api" + EpubService.PATH)
-                                                           .build())
-                                         .request(MediaType.APPLICATION_JSON)
-                                         .get(String.class);
+        //get the epub root data
+        final JsonObject json = getResponseAsJson("/");
 
-        System.out.println("data = " + root);
-        assertThat(root, notNullValue());
-
-        final JsonObject rootData = Json.createReader(new StringReader(root))
-                                        .readObject();
-
-        final String pathUri = rootData.getString("pathUri");
+        //test a few things
+        final String pathUri = json.getString("pathUri");
         assertThat(pathUri, endsWith("/api/epub/"));
-//        final String browseUri = rootData.getString("browseUri");
-//        assertThat(browseUri, endsWith("/api/epub/"));
 
 
-//        final JsonObject folder = rootData.getJsonObject("folder");
-//        final JsonArray folders = folder.getJsonArray("folders");
-//        assertThat(folders.size(), is(2));
-//        assertThat(folder.getString("path"), is(""));
-//        assertThat(folder.getJsonArray("files")
-//                         .size(), is(0));
-//        final String newFolder = folders.getString(0);
-//
-//
-//        final String bramStoker = ClientBuilder.newClient()
-//                                               .target(UriBuilder.fromPath(this.base + "api/epub/" + newFolder)
-//                                                                 .build())
-//                                               .request(MediaType.APPLICATION_JSON)
-//                                               .get(String.class);
-//        final JsonObject bramStokerData = Json.createReader(new StringReader(bramStoker))
-//                                              .readObject();
-//
-//        System.out.println("data = " + bramStokerData);
-//        assertThat(root, notNullValue());
-//
-//        final JsonObject bramStrokerFolder = bramStokerData.getJsonObject("folder");
-//        assertThat(bramStrokerFolder.getString("path"), is(newFolder));
-//        assertThat(bramStrokerFolder.getJsonArray("files")
-//                                    .size(), is(1));
+        //get the files
+        final JsonArray files = json.getJsonArray("browseFiles");
+        assertNotNull(files);
+        assertThat(files.size(), is(0));
 
+        final JsonArray folders = json.getJsonArray("folders");
+        assertThat(folders.size(), not(0));
+
+        final boolean condition = folders.stream()
+                                         .filter(jsonValue -> jsonValue.getValueType() == JsonValue.ValueType.OBJECT)
+                                         .map(jsonValue -> (JsonObject) jsonValue)
+                                         .anyMatch(jsonObject -> "Stoker, Bram".equals(
+                                                 jsonObject.getString("key")));
+        assertTrue(condition);
+//        final String bram = folders.getString("Stoker, Bram");
+//        final JsonObject bramStokerFolder = getResponseByUrlAsJson(bram);
+//
+//        final JsonObject bramFiles = bramStokerFolder.getJsonObject("browseFiles");
+//        assertNotNull(bramFiles);
+//        assertThat(bramFiles.size(), not(0));
+//        assertTrue(bramFiles.containsKey("pg345.epub"));
+//        final String home = bramFiles.getString("pg345.epub");
+//        assertNotNull(home);
+
+
+    }
+
+    private JsonObject getResponseByUrlAsJson(final String url) {
+        final String response = ClientBuilder.newClient()
+                                             .target(url)
+                                             .request()
+                                             .get(String.class);
+
+        assertThat(response, notNullValue());
+        System.out.println("response = " + response);
+        return Json.createReader(new StringReader(response))
+                   .readObject();
+
+    }
+
+    private Response getResponse(final String relativeApiPath) {
+        final Response response = ClientBuilder.newClient()
+                                               .target(UriBuilder.fromPath(
+                                                       this.base.toString() + "api" + EpubService.PATH
+                                                       + relativeApiPath)
+                                                                 .build())
+                                               .request()
+                                               .get(Response.class);
+
+        assertThat(response, notNullValue());
+        System.out.println("response = " + response);
+        return response;
+    }
+
+    private JsonObject getResponseAsJson(final String relativeApiPath) {
+        final String response = ClientBuilder.newClient()
+                                             .target(UriBuilder.fromPath(
+                                                     this.base.toString() + "api" + EpubService.PATH + relativeApiPath)
+                                                               .build())
+                                             .request()
+                                             .get(String.class);
+
+        assertThat(response, notNullValue());
+        System.out.println("response = " + response);
+        return Json.createReader(new StringReader(response))
+                   .readObject();
     }
 
 }

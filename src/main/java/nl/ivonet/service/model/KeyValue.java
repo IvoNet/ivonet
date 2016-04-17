@@ -16,30 +16,34 @@
 
 package nl.ivonet.service.model;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-
 /**
  * @author Ivo Woltring
  */
-@XmlRootElement
-public class Content {
+public class KeyValue {
+    private String key;
+    private String value;
 
-    @XmlElement
-    private String content;
-
-    public Content() {
+    public KeyValue() {
     }
 
-    public Content(final byte[] content) {
-        this.content = new String(content);
+    public KeyValue(final String key, final String value) {
+        this.key = key;
+        this.value = value;
     }
 
-    public String getContent() {
-        return this.content;
+    public String getKey() {
+        return this.key;
     }
 
-    public void setContent(final String content) {
-        this.content = content;
+    public void setKey(final String key) {
+        this.key = key;
+    }
+
+    public String getValue() {
+        return this.value;
+    }
+
+    public void setValue(final String value) {
+        this.value = value;
     }
 }

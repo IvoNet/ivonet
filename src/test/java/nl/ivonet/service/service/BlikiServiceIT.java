@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.MediaType;
@@ -98,14 +99,24 @@ public class BlikiServiceIT {
         final String path = rootData.getString("pathUri");
         assertThat(path, endsWith("/api/bliki/"));
 
-        final JsonObject foldersMap = rootData.getJsonObject("folders");
-        final String javaFolder = foldersMap.getString("Java");
+        final JsonArray folders = rootData.getJsonArray("folders");
+        final String javaFolder = folders.stream()
+                                         .map(p -> (JsonObject) p)
+                                         .filter(jsonObject -> "Java".equals(jsonObject.getString("key")))
+                                         .findFirst()
+                                         .get()
+                                         .getString("value");
         System.out.println("javaFolder = " + javaFolder);
         assertThat(javaFolder, endsWith("/api/bliki/Java"));
-        assertThat(foldersMap.size(), is(2));
+        assertThat(folders.size(), is(2));
 
-        final JsonObject browseFiles = rootData.getJsonObject("browseFiles");
-        assertThat(browseFiles.getString("home.md"), endsWith("/api/bliki/%2Fhome.md"));
+        final JsonArray browseFiles = rootData.getJsonArray("browseFiles");
+        assertThat(browseFiles.stream()
+                              .map(p -> (JsonObject) p)
+                              .filter(jsonObject -> "home.md".equals(jsonObject.getString("key")))
+                              .findFirst()
+                              .get()
+                              .getString("value"), endsWith("/api/bliki/%2Fhome.md"));
         assertThat(browseFiles.size(), is(1));
 
 //        final String newFolder = folders.getString(0);

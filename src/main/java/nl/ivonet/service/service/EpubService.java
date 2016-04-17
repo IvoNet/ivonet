@@ -82,13 +82,11 @@ public class EpubService {
         final File file = Paths.get(this.epubFolder, urlDecode(filename))
                                .toFile();
         if (file.exists()) {
-            System.out.println("yep found!!!");
             return Response.ok()
                            .type(APPLICATION_EPUB)
                            .entity(file)
                            .build();
         }
-        System.out.println("Nope not found!!!");
         return Response.status(Response.Status.NOT_FOUND)
                        .build();
     }

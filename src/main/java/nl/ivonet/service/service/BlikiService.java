@@ -84,7 +84,6 @@ public class BlikiService {
         System.out.println("mmd = " + mmd);
         try {
             final Content content = new Content(Files.readAllBytes(Paths.get(this.blikiFolder, urlDecode(mmd))));
-//            addMetadata(content);
             return Response.ok()
                            .type(APPLICATION_JSON)
                            .entity(content)

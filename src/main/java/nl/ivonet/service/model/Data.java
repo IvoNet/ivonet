@@ -2,11 +2,10 @@ package nl.ivonet.service.model;
 
 import nl.ivonet.service.directory.Folder;
 
-import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.Map;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -14,16 +13,11 @@ import java.util.stream.Collectors;
  */
 @XmlRootElement
 public class Data {
-    @XmlElement
     private final String path;
-    @XmlElement
     private final String pathUri;
-    @XmlElement
-    private final Map<String, String> folders;
-    @XmlElement
-    private final Map<String, String> browseFiles;
-    @XmlElement
-    private final Map<String, String> downloadFiles;
+    private final List<KeyValue> folders;
+    private final List<KeyValue> browseFiles;
+    private final List<KeyValue> downloadFiles;
 
 
     public Data(final Folder folder, final String baseUri, final String browseUri, final String fileUri,
@@ -32,18 +26,18 @@ public class Data {
         this.pathUri = endslash(baseUri) + urlEncode(folder.getPath());
         this.folders = folder.getFolders()
                              .stream()
-                             .collect(Collectors.toMap(directory -> directory,
-                                                       directory -> endslash(baseUri) + urlEncode(directory)));
+                             .map(directory -> new KeyValue(directory, this.pathUri + urlEncode(directory)))
+                             .collect(Collectors.toList());
         this.browseFiles = folder.getFiles()
                                  .stream()
-                                 .collect(Collectors.toMap(filename -> filename,
-                                                           filename -> endslash(fileUri) + urlEncode(
-                                                                   endslash(folder.getPath()) + filename)));
+                                 .map(filename -> new KeyValue(filename, endslash(browseUri) + urlEncode(
+                                         endslash(this.path) + filename)))
+                                 .collect(Collectors.toList());
         this.downloadFiles = folder.getFiles()
                                    .stream()
-                                   .collect(Collectors.toMap(filename -> filename,
-                                                             filename -> endslash(downloadUri) + urlEncode(
-                                                                     endslash(folder.getPath()) + filename)));
+                                   .map(filename -> new KeyValue(filename, endslash(downloadUri) + urlEncode(
+                                           endslash(folder.getPath()) + filename)))
+                                   .collect(Collectors.toList());
     }
 
     private String urlEncode(final String path) {
@@ -67,15 +61,15 @@ public class Data {
         return this.pathUri;
     }
 
-    public Map<String, String> getFolders() {
+    public List<KeyValue> getFolders() {
         return this.folders;
     }
 
-    public Map<String, String> getBrowseFiles() {
+    public List<KeyValue> getBrowseFiles() {
         return this.browseFiles;
     }
 
-    public Map<String, String> getDownloadFiles() {
+    public List<KeyValue> getDownloadFiles() {
         return this.downloadFiles;
     }
 }
