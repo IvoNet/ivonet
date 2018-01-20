@@ -1,6 +1,7 @@
 # IvoNet services
 
 JAX-RS based services for IvoNet.nl
+Actually not used, but who knows.... in the future
 
 # Testing
 
